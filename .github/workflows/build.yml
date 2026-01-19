@@ -1,22 +1,13 @@
-name: Build TDLib (ARM64)
+name: Build TDLib (ARM64, clang)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
-  build-tdlib:
-    name: Build TDLib for ARM64
+  build:
     runs-on: ubuntu-24.04-arm
 
     steps:
-      - name: Checkout TDLib
-        uses: actions/checkout@v4
-        with:
-          repository: telegramdesktop/tdlib
-          path: tdlib
-
       - name: Install dependencies
         run: |
           sudo apt update
@@ -26,31 +17,38 @@ jobs:
             gperf \
             zlib1g-dev \
             libssl-dev \
+            clang \
             libc++-dev \
             libc++abi-dev \
-            clang \
             make
+
+      - name: Clone TDLib
+        run: |
+          git clone --depth 1 https://github.com/tdlib/td.git
+          ls -la td
 
       - name: Configure TDLib
         run: |
-          cd tdlib
+          cd td
           mkdir build
           cd build
+          CC=clang CXX=clang++ \
+          CXXFLAGS="-stdlib=libc++" \
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DTD_ENABLE_JNI=OFF \
             -DTD_ENABLE_DOTNET=OFF \
             -DTD_ENABLE_LTO=ON
 
-      - name: Build TDLib
+      - name: Build tdjson
         run: |
-          cd tdlib/build
+          cd td/build
           cmake --build . --target tdjson -- -j$(nproc)
 
       - name: Collect libtdjson.so
         run: |
           mkdir -p output
-          find tdlib/build -name "libtdjson.so" -exec cp {} output/ \;
+          find td/build -name "libtdjson.so" -exec cp {} output/ \;
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
