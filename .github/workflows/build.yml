@@ -38,7 +38,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DTD_ENABLE_JNI=OFF \
             -DTD_ENABLE_DOTNET=OFF \
-            -DTD_ENABLE_LTO=ON
+            -DTD_ENABLE_LTO=OFF
 
       - name: Build tdjson
         run: |
