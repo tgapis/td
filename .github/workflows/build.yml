@@ -1,0 +1,59 @@
+name: Build TDLib (ARM64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-tdlib:
+    name: Build TDLib for ARM64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout TDLib
+        uses: actions/checkout@v4
+        with:
+          repository: telegramdesktop/tdlib
+          path: tdlib
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git \
+            cmake \
+            gperf \
+            zlib1g-dev \
+            libssl-dev \
+            libc++-dev \
+            libc++abi-dev \
+            clang \
+            make
+
+      - name: Configure TDLib
+        run: |
+          cd tdlib
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DTD_ENABLE_JNI=OFF \
+            -DTD_ENABLE_DOTNET=OFF \
+            -DTD_ENABLE_LTO=ON
+
+      - name: Build TDLib
+        run: |
+          cd tdlib/build
+          cmake --build . --target tdjson -- -j$(nproc)
+
+      - name: Collect libtdjson.so
+        run: |
+          mkdir -p output
+          find tdlib/build -name "libtdjson.so" -exec cp {} output/ \;
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-arm64
+          path: output/libtdjson.so
